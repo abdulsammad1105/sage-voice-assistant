@@ -13,7 +13,7 @@ import musiclib as music
 r = sr.Recognizer()
 newsapi = "c45efdc0577d466f8d90de0029c26127"
 
-# Async speak using edge-tts + pygame
+
 async def speak(text):
     output_file = "temp.mp3"
     communicate = edge_tts.Communicate(text=text, voice="en-US-AriaNeural")
@@ -29,20 +29,19 @@ async def speak(text):
     pygame.mixer.music.unload()
     os.remove(output_file)
 
-# Run async speak from sync context
 def speak_sync(text):
     asyncio.run(speak(text))
 
-# Handle Gemini command
+
 def geminicommand(command):
-    genai.configure(api_key="AIzaSyBvlrLfM1-utsrqZvDsc69KKZChuPpqueM")
+    genai.configure(api_key="YOUR-API-KEY FROM GEMEINI")
     model = genai.GenerativeModel('gemini-1.5-flash')
     response = model.generate_content(
         f"You are a virtual assistant named Sage skilled in general tasks like Alexa and Google Cloud. {command}"
     )
     return response.text
 
-# Process spoken commands
+
 def processcommand(c):
     if "open google" in c.lower():
         wb.open("https://google.com")
@@ -72,7 +71,7 @@ def processcommand(c):
         result = geminicommand(c)
         speak_sync(result)
 
-# Main program
+
 if platform.system() == "Emscripten":
     async def main():
         speak_sync("Initializing Sage...")
