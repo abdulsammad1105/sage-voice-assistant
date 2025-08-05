@@ -5,12 +5,13 @@ import requests
 import asyncio
 import edge_tts
 import os
+import platform
 import pygame
-from openai import OpenAI
-import musiclib as music  # Make sure this exists
+import google.generativeai as genai
+import musiclib as music  
 
 r = sr.Recognizer()
-newsapi = "your-API KEY"  #REMEMBER ITS PAID FROM OPENAIAPIS
+newsapi = "c45efdc0577d466f8d90de0029c26127"
 
 # Async speak using edge-tts + pygame
 async def speak(text):
@@ -18,7 +19,6 @@ async def speak(text):
     communicate = edge_tts.Communicate(text=text, voice="en-US-AriaNeural")
     await communicate.save(output_file)
 
-    # Play using pygame
     pygame.mixer.init()
     pygame.mixer.music.load(output_file)
     pygame.mixer.music.play()
@@ -33,19 +33,14 @@ async def speak(text):
 def speak_sync(text):
     asyncio.run(speak(text))
 
-# Handle OpenAI command
-def openaicommand(command):
-    client = OpenAI(
-        api_key="YOUR-API-KEY " ) # api of chatgpt is paid so you have to pay 5 dollars to access to api of openai
-
-    completion = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a virtual assistant named Sage skilled in general tasks like Alexa and Google Cloud"},
-            {"role": "user", "content": command}
-        ]
+# Handle Gemini command
+def geminicommand(command):
+    genai.configure(api_key="AIzaSyBvlrLfM1-utsrqZvDsc69KKZChuPpqueM")
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    response = model.generate_content(
+        f"You are a virtual assistant named Sage skilled in general tasks like Alexa and Google Cloud. {command}"
     )
-    return completion.choices[0].message.content
+    return response.text
 
 # Process spoken commands
 def processcommand(c):
@@ -74,30 +69,58 @@ def processcommand(c):
         else:
             speak_sync("Unable to fetch news right now.")
     else:
-        result = openaicommand(c)
+        result = geminicommand(c)
         speak_sync(result)
 
 # Main program
-if __name__ == "__main__":
-    speak_sync("Initializing Sage...")
-    while True:
-        try:
-            with sr.Microphone() as source:
-                print("Listening for wake word...")
-                audio = r.listen(source, timeout=2, phrase_time_limit=1)
-            word = r.recognize_google(audio)
-            print(f"You said: {word}")
-
-            if word.lower() == "hello":
-                speak_sync("Yes, how can I help you?")
+if platform.system() == "Emscripten":
+    async def main():
+        speak_sync("Initializing Sage...")
+        while True:
+            try:
                 with sr.Microphone() as source:
-                    print("Listening for command...")
-                    audio = r.listen(source)
-                command = r.recognize_google(audio)
-                print(f"Command: {command}")
-                processcommand(command)
+                    print("Listening for wake word...")
+                    audio = r.listen(source, timeout=2, phrase_time_limit=1)
+                word = r.recognize_google(audio)
+                print(f"You said: {word}")
 
-        except sr.UnknownValueError:
-            print("SAGE could not understand audio")
-        except Exception as e:
-            print(f"SAGE error: {e}")
+                if word.lower() == "sage":
+                    speak_sync("Yes, how can I help you?")
+                    with sr.Microphone() as source:
+                        print("Listening for command...")
+                        audio = r.listen(source)
+                    command = r.recognize_google(audio)
+                    print(f"Command: {command}")
+                    processcommand(command)
+
+            except sr.UnknownValueError:
+                print("SAGE could not understand audio")
+            except Exception as e:
+                print(f"SAGE error: {e}")
+        await asyncio.sleep(1.0 / 60)  
+
+    asyncio.ensure_future(main())
+else:
+    if __name__ == "__main__":
+        speak_sync("Initializing Sage...")
+        while True:
+            try:
+                with sr.Microphone() as source:
+                    print("Listening for wake word...")
+                    audio = r.listen(source, timeout=2, phrase_time_limit=1)
+                word = r.recognize_google(audio)
+                print(f"You said: {word}")
+
+                if word.lower() == "sage":
+                    speak_sync("Yes, how can I help you?")
+                    with sr.Microphone() as source:
+                        print("Listening for command...")
+                        audio = r.listen(source)
+                    command = r.recognize_google(audio)
+                    print(f"Command: {command}")
+                    processcommand(command)
+
+            except sr.UnknownValueError:
+                print("SAGE could not understand audio")
+            except Exception as e:
+                print(f"SAGE error: {e}")
